@@ -33,19 +33,6 @@ reserved_symbols = {
   '': '\'',
   '': '"',
 
-  # Numbers
-  '': '0x',
-  '零': '0',
-  '一': '1',
-  '二': '2',
-  '三': '3',
-  '四': '4',
-  '五': '5',
-  '六': '6',
-  '七': '7',
-  '八': '8',
-  '九': '9',
-
   # Arithmetic operations
   '加':   ' + ',   '加是':   ' += ',
   '减':   ' - ',   '减是':   ' -= ',
@@ -70,7 +57,23 @@ reserved_symbols = {
   '': ' < ',
 }
 
-# 
+number_sumbols = {
+  '': '0x', # Hex string representation
+  '': '0b', # Binary string representation
+  '负': '-',
+  '零': '0',
+  '一': '1',
+  '二': '2',
+  '三': '3',
+  '四': '4',
+  '五': '5',
+  '六': '6',
+  '七': '7',
+  '八': '8',
+  '九': '9',
+}
+
+# Symbols which should not be seen in the script.
 unsupported_symbols = {
   reserved_symbols[key].strip(): key for key in reserved_symbols
 }
