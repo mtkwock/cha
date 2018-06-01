@@ -11,7 +11,7 @@ class StringToken(Token):
   """
   pass
 
-class MultilineString(Token):
+class MultilineStringToken(Token):
   """A part of a multiline string.
   Can begin or end with triple quotes, but can be an entire line without.
 
@@ -27,7 +27,7 @@ class MultilineString(Token):
 
 class NumberToken(Token):
   """A number token, can be of various forms:
-  e.g. 0b10101010, 0x01afb, 123 -123 0.0052 122.2 
+  e.g. 0b10101010, 0x01afb, 123 -123 0.0052 122.2
   """
   pass
 
@@ -45,4 +45,3 @@ class VariableToken(Token):
 class ReservedWordToken(Token):
   """Python words such as class, def, True, and False."""
   pass
-
