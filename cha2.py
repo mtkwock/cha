@@ -34,33 +34,7 @@ unsupported_symbols = {
   reserved_symbols[key].strip(): key for key in reserved_symbols
 }
 
-<<<<<<< HEAD
-# Reserved words based on
-# https://www.programiz.com/python-programming/keywords-identifier#key
-reserved_words = {
-  # A line can only start with this is if it is declaring a class.
-  # Variables, class names, and functions can start with this.
-  '种类': 'class',
-  '定义': 'def',
-  '如果': 'if',
-  '否则如果': 'elif',
-  '否则': 'else',
-  '真': 'True',
-  '假': 'False',
-  '无': 'None',
-  '和': 'and',
-  '或者': 'or',
-  '不': 'not',
-  '跳出': 'break',
-  '继续': 'continue', # ji4xu4
-}
-
-def ToPinyin(string):
-  return pget(string)
-  # return pget(string, format='numerical')
-=======
 WHITESPACE_CHARS = frozenset((' ', '\n', '\t'))
->>>>>>> 6229452... Multiline DFA, beginningof symbol and reserved word replace, increased structuring
 
 class ChaParser:
   def __init__(self):
