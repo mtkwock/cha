@@ -1,6 +1,9 @@
 #!bin/bash/env python
 
 from pinyin import get as pget
+from string_dfa import StringDfa, MultilineStringDfa
+from cha_token import WhitespaceToken, EndToken, SymbolToken, ReservedWordToken
+from cha_translation import reserved_symbols, first_pass_symbols
 import sys
 from pathlib import Path
 
@@ -9,68 +12,21 @@ class ChaNotImplementedException(Exception):
   def __init__(self, name):
     super().__init__(name + ' not implemented')
 
+# TODO: Implement and replace.
+class NumberVariableDfa():
+  def ReplaceTokens(self, tokens):
+    print('NumberVariableDfa needs to be implemented!!!')
+    return tokens
+
 CHAR_TO_VAR_BASE = {
-  '艹艹初始艹艹': '__chūshǐ__',
-  '自己': 'zìjǐ',
-  '都': 'dōu',
-  '任何': 'rènhé',
+  '艹艹初始艹艹': '__chūshǐ__', # __init__
+  '自己': 'zìjǐ', # Self
+  '都': 'dōu', # All
+  '任何': 'rènhé', # Any
 }
 
 VAR_TO_CHAR_BASE = {
   CHAR_TO_VAR_BASE[key]: key for key in CHAR_TO_VAR_BASE
-}
-
-# These words are reserved Python words and symbols
-reserved_symbols = {
-  # Symbols based on https://docs.python.org/3/genindex-Symbols.html
-  '的': '.',
-  '是': ' = ',  # Assign
-  '': ' # ', # Commenting
-  '（': '(', '）': ')',
-  '【': '[', '】': ']',
-  '「': '{', '」': '}',
-  '': ' % ', '': ' %= ',
-  '': '\'',
-  '': '"',
-
-  # Arithmetic operations
-  '加':   ' + ',   '加是':   ' += ',
-  '减':   ' - ',   '减是':   ' -= ',
-  '乘':   ' * ',   '乘是':   ' *= ',
-  '除':  ' / ',  '除是':  ' /= ',
-  '整除': ' // ', '整除是': ' //= ',
-  '幂': ' ** ', '幂是': ' **= ',  # Exponent
-
-  # Binary operations
-  '': ' ~',  # Negation operator
-  '': ' & ',  '': ' &= ',
-  '': ' | ',  '': ' |= ',
-  '': ' ^ ',  '': ' ^= ',
-  '': ' >> ', '': ' >>= ',
-  '': ' << ', '': ' <<= ',
-
-  # Comparators
-  '大于': ' > ',
-  '': ' >= ',
-  '等于': ' == ',
-  '': ' <= ',
-  '小于': ' < ',
-}
-
-number_sumbols = {
-  '': '0x', # Hex string representation
-  '': '0b', # Binary string representation
-  '负': '-',
-  '零': '0',
-  '一': '1',
-  '二': '2',
-  '三': '3',
-  '四': '4',
-  '五': '5',
-  '六': '6',
-  '七': '7',
-  '八': '8',
-  '九': '9',
 }
 
 # Symbols which should not be seen in the script.
@@ -78,6 +34,7 @@ unsupported_symbols = {
   reserved_symbols[key].strip(): key for key in reserved_symbols
 }
 
+<<<<<<< HEAD
 # Reserved words based on
 # https://www.programiz.com/python-programming/keywords-identifier#key
 reserved_words = {
@@ -101,17 +58,61 @@ reserved_words = {
 def ToPinyin(string):
   return pget(string)
   # return pget(string, format='numerical')
+=======
+WHITESPACE_CHARS = frozenset((' ', '\n', '\t'))
+>>>>>>> 6229452... Multiline DFA, beginningof symbol and reserved word replace, increased structuring
 
 class ChaParser:
   def __init__(self):
     self.char_to_var = dict(CHAR_TO_VAR_BASE)
     self.var_to_char = dict(VAR_TO_CHAR_BASE)
+    self.multiline_string_dfa = MultilineStringDfa('“', '”')
+    self.string_dfa = StringDfa('“', '”')
+    self.number_variable_dfa = NumberVariableDfa()
 
   def destroy(self):
     self.char_to_var = None
     self.var_to_char = None
 
-  def ParseLine(self, line):
+  def WhitespaceReplaceTokens(self, tokens):
+    """"""
+    whitespace = ''
+    for token in tokens:
+        if token == ' ' or token == '\t':
+            whitespace += token
+        else:
+            break
+    token = WhitespaceToken(whitespace)
+    f = filter(lambda t: t not in WHITESPACE_CHARS, tokens[len(whitespace):])
+
+    return [token, *[t for t in f], EndToken()]
+
+  def SymbolsReplaceTokens(self, tokens):
+      """Replaces symbol characters symbol tokens."""
+      result = list(tokens)
+      def ReplaceSymbols(symbols):
+        for symbol in symbols:
+          if not symbol: continue
+          for i in range(len(result) - len(symbol) + 1):
+            found = True
+            for j in range(len(symbol)):
+              if symbol[j] != tokens[i + j]:
+                found = False
+                break
+            if not found:
+              continue
+            result[i] = SymbolToken(symbol)
+            for j in range(len(symbol) - 1):
+              result[i + j + 1] = False
+      ReplaceSymbols(first_pass_symbols)
+      ReplaceSymbols(reserved_symbols)
+      return [t for t in filter(lambda x: bool(x), result)]
+  def ReservedWordsReplaceTokens(self, tokens):
+      """Replaces reserved names such as class, def, and so on."""
+      raise ChaNotImplementedException('ReservedWordsReplaceTokens')
+      return tokens
+
+  def ParseLine(self, line, in_multiline=False):
     """Parses a single line of .cha to python.
 
     As a side effect, modifies char_to_var and var_to_char with new
@@ -124,20 +125,34 @@ class ChaParser:
     Returns:
       str: a string of .py code
     """
-    output_string = line
-    for symbol in unsupported_symbols:
-      if symbol not in line: continue
+    tokens = [c for c in line]
+    tokens = self.multiline_string_dfa.ReplaceTokens(
+        tokens,
+        self.multiline_string_dfa.inside)
+    tokens = self.string_dfa.ReplaceTokens(tokens)
+    tokens = self.WhitespaceReplaceTokens(tokens)
+    tokens = self.SymbolsReplaceTokens(tokens)
+    tokens = self.ReservedWordsReplaceTokens(tokens)
+    tokens = self.number_variable_dfa.ReplaceTokens(tokens)
+    for t in tokens:
+      if isinstance(t, str):
+        raise ChaParseException('Character not parsed: %s' % t)
+    return tokens
 
-      raise ChaParseException('Invalid symbol: "%s", replace with "%s"' %
-                              (symbol, unsupported_symbols[symbol]))
-
-    # TODO: handle strings
-    for symbol in reserved_symbols:
-      if not symbol: continue
-      output_string = output_string.replace(symbol, reserved_symbols[symbol])
-    # TODO: handle reserved words
-    # TODO: handle variables, new and old
-    return output_string
+    # output_string = line
+    # for symbol in unsupported_symbols:
+    #   if symbol not in line: continue
+    #
+    #   raise ChaParseException('Invalid symbol: "%s", replace with "%s"' %
+    #                           (symbol, unsupported_symbols[symbol]))
+    #
+    # # TODO: handle strings
+    # for symbol in reserved_symbols:
+    #   if not symbol: continue
+    #   output_string = output_string.replace(symbol, reserved_symbols[symbol])
+    # # TODO: handle reserved words
+    # # TODO: handle variables, new and old
+    # return output_string
 
   def Convert(self, source, dest, space_per_indent=2, use_tabs=False):
     """Open and convert a single .cha file to the equivalent .py file
