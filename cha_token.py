@@ -46,6 +46,7 @@ class NumberFormat(Enum):
   SHORTHAND = 2
   FULLNAME = 3
   NARY = 4
+  SCIENTIFIC = 5
 
 
 class NumberToken(Token):
@@ -57,15 +58,18 @@ class NumberToken(Token):
     self.format = format
 
   def Translate(self):
-    if self.format == NumberFormat.ARABIC:
-      pass
-    elif self.format == NumberFormat.SHORTHAND:
-      pass
-    elif self.format == NumberFormat.FULLNAME:
-      pass
-    elif self.format == NumberFormat.NARY:
-      pass
-    raise Exception('Format not supported: %s' % self.format)
+      #TO_DO
+      if self.format == NumberFormat.ARABIC:
+          pass
+      elif self.format == NumberFormat.SHORTHAND:
+          pass
+      elif self.format == NumberFormat.FULLNAME:
+          pass
+      elif self.format == NumberFormat.NARY:
+          pass
+      elif self.format == NumberFormat.SCIENTIFIC: # potentially remove if included in arabic
+          pass
+      raise Exception('Format not supported: %s' % self.format)
 
 class SymbolToken(Token):
   """A single symbol:
