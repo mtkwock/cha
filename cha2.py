@@ -2,8 +2,8 @@
 
 from pinyin import get as pget
 from string_dfa import StringDfa, MultilineStringDfa
-from cha_token import WhitespaceToken, EndToken, SymbolToken, ReservedWordToken
-from cha_translation import reserved_symbols, first_pass_symbols
+from cha_token import Token, WhitespaceToken, EndToken, SymbolToken, ReservedWordToken, VariableToken, ParseToken
+from cha_translation import reserved_symbols, symbol_order, reserved_beginning_words
 import sys
 from pathlib import Path
 
@@ -15,8 +15,18 @@ class ChaNotImplementedException(Exception):
 # TODO: Implement and replace.
 class NumberVariableDfa():
   def ReplaceTokens(self, tokens):
+    result = []
+    s = ''
+    for t in tokens:
+      if isinstance(t, Token):
+        if s:
+          result.append(VariableToken(s))
+          s = ''
+        result.append(t)
+      else:
+        s += t
     print('NumberVariableDfa needs to be implemented!!!')
-    return tokens
+    return result
 
 CHAR_TO_VAR_BASE = {
   '艹艹初始艹艹': '__chūshǐ__', # __init__
@@ -49,13 +59,17 @@ class ChaParser:
     self.var_to_char = None
 
   def WhitespaceReplaceTokens(self, tokens):
-    """"""
+    """Brings together beginning whitespace and removes all extra whitespace.
+
+    Also adds an EndToken to the end of the token list.
+
+    """
     whitespace = ''
     for token in tokens:
-        if token == ' ' or token == '\t':
-            whitespace += token
-        else:
-            break
+      if token == ' ' or token == '\t':
+        whitespace += token
+      else:
+        break
     token = WhitespaceToken(whitespace)
     f = filter(lambda t: t not in WHITESPACE_CHARS, tokens[len(whitespace):])
 
@@ -64,29 +78,51 @@ class ChaParser:
   def SymbolsReplaceTokens(self, tokens):
       """Replaces symbol characters symbol tokens."""
       result = list(tokens)
-      def ReplaceSymbols(symbols):
-        for symbol in symbols:
-          if not symbol: continue
-          for i in range(len(result) - len(symbol) + 1):
-            found = True
-            for j in range(len(symbol)):
-              if symbol[j] != tokens[i + j]:
-                found = False
-                break
-            if not found:
-              continue
-            result[i] = SymbolToken(symbol)
-            for j in range(len(symbol) - 1):
-              result[i + j + 1] = False
-      ReplaceSymbols(first_pass_symbols)
-      ReplaceSymbols(reserved_symbols)
+      for symbol in symbol_order:
+        if not symbol: continue
+        for i in range(len(result) - len(symbol) + 1):
+          found = True
+          for j in range(len(symbol)):
+            if symbol[j] != result[i + j]:
+              found = False
+              break
+          if not found:
+            continue
+          # import pdb; pdb.set_trace()
+          result[i] = SymbolToken(symbol)
+          for j in range(len(symbol) - 1):
+            result[i + j + 1] = False
+      # ReplaceSymbols(reserved_symbols)
       return [t for t in filter(lambda x: bool(x), result)]
   def ReservedWordsReplaceTokens(self, tokens):
-      """Replaces reserved names such as class, def, and so on."""
-      raise ChaNotImplementedException('ReservedWordsReplaceTokens')
-      return tokens
+    """Replaces reserved names such as class, def, and so on."""
+    for word in reserved_beginning_words:
+      if not word: continue
+      found = True
+      for i in range(len(word)):
+        # These only need to be checked at the beginning.
+        if tokens[i + 1] != word[i]:
+          found = False
+          break
+      if not found: continue
+      tokens[1] = ReservedWordToken(word)
+      for i in range(1, len(word)):
+        tokens[i + 1] = False
+    # for word in reserved_words:
+    #   if not word: continue # Word not defined.
+    #   for i in range(1 + len(tokens) - len(word)):
+    #     found = True
+    #     for j in range(len(word)):
+    #       if tokens[i + j] != word[j]:
+    #         found = False
+    #         break
+    #     if not found: continue
+    #     tokens[i] = ReservedWordToken(word)
+    #     for j in range(1, len(word)):
+    #       tokens[i + j] = False
+    return [t for t in filter(lambda t: bool(t), tokens)]
 
-  def ParseLine(self, line, in_multiline=False):
+  def ParseLine(self, line):
     """Parses a single line of .cha to python.
 
     As a side effect, modifies char_to_var and var_to_char with new
@@ -103,30 +139,46 @@ class ChaParser:
     tokens = self.multiline_string_dfa.ReplaceTokens(
         tokens,
         self.multiline_string_dfa.inside)
+    # print('1: %s', tokens)
     tokens = self.string_dfa.ReplaceTokens(tokens)
+    # print('2: %s', tokens)
     tokens = self.WhitespaceReplaceTokens(tokens)
-    tokens = self.SymbolsReplaceTokens(tokens)
+    # print('3: %s', tokens)
     tokens = self.ReservedWordsReplaceTokens(tokens)
+    # print('4: %s', tokens)
+    tokens = self.SymbolsReplaceTokens(tokens)
+    # print('5: %s', tokens)
     tokens = self.number_variable_dfa.ReplaceTokens(tokens)
+    # print('6: %s', tokens)
     for t in tokens:
       if isinstance(t, str):
         raise ChaParseException('Character not parsed: %s' % t)
-    return tokens
+    print(tokens)
+    # Handle class representation.
+    if tokens[1].Translate() == 'class ':
+      if tokens[3].Translate() == '(':
+        tokens = [*tokens[:4], ParseToken('ChaObject, '), *tokens[4:]]
+      else:
+        tokens = [*tokens[:3], ParseToken('(ChaObject)'), *tokens[3:]]
 
-    # output_string = line
-    # for symbol in unsupported_symbols:
-    #   if symbol not in line: continue
-    #
-    #   raise ChaParseException('Invalid symbol: "%s", replace with "%s"' %
-    #                           (symbol, unsupported_symbols[symbol]))
-    #
-    # # TODO: handle strings
-    # for symbol in reserved_symbols:
-    #   if not symbol: continue
-    #   output_string = output_string.replace(symbol, reserved_symbols[symbol])
-    # # TODO: handle reserved words
-    # # TODO: handle variables, new and old
-    # return output_string
+    # Bring tokens together.
+    translation = ''
+    avoid_next = True
+    def translate(t):
+      if isinstance(t, VariableToken):
+        return t.Translate(self.char_to_var, self.var_to_char)
+      return t.Translate()
+    for t in tokens:
+      if any(isinstance(t, token_class) for token_class in [WhitespaceToken, SymbolToken, ReservedWordToken, ParseToken, EndToken]):
+        translation += t.Translate()
+        avoid_next = True
+      elif avoid_next:
+        translation += translate(t)
+        avoid_next = False
+      else:
+        translation += ' ' + translate(t)
+        avoid_next = False
+    return translation
 
   def Convert(self, source, dest, space_per_indent=2, use_tabs=False):
     """Open and convert a single .cha file to the equivalent .py file
