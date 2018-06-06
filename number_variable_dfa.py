@@ -42,11 +42,10 @@ class State(object):
                 if fn(char):
                     if self.name == 'Ready' and ns.name != 'Ready':
                         self.just_started = True
-                    elif ns.name == 'NARY':
-                        ns.base_i = int(self.base_s)
-                        print('setting base to ' + ns.base_i)
-                    elif ns.name == 'D1' or ns.name =='D2':
+                    if ns.name == 'D1' or ns.name =='D2':
                         ns.base_s = self.base_s + number_symbols[char]
+                    elif ns.name == 'Nary':
+                        ns.base_i = int(self.base_s)
                     return ns
             else:
                 if fn(char, self.base_i):
@@ -118,8 +117,9 @@ class NumberVariableDfa(Dfa):
         self.D1.AddDelta(self.ischaracter, self.VARIABLE)
 
         self.NARY.AddDelta(lambda c, b: isinstance(c, Token), self.NAR)
-        self.NARY.AddDelta(self.ischaracter, self.VARIABLE)
         self.NARY.AddDelta(self.isvaliddigit, self.NARY)
+        self.NARY.AddDelta(self.ischaracter, self.VARIABLE)
+
 
         self.SCIENTIFIC.AddDelta(lambda c: isinstance(c, Token), self.ARABIC)
         self.SCIENTIFIC.AddDelta(self.isdigit, self.SCIENTIFIC)
@@ -156,8 +156,9 @@ class NumberVariableDfa(Dfa):
         Args:
             char: string of a single character.
         """
-        self.state = self.state.GetNextState(char)
         print(self.state.name)
+        self.state = self.state.GetNextState(char)
+
 
     def ReplaceTokens(self, tokens):
         """Search through the tokens and combine number and variable tokens.
