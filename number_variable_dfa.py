@@ -90,6 +90,7 @@ class NumberVariableDfa(Dfa):
         self.FULLNAME = State('Fullname')
         self.FULL = State('Full') # End state
         self.SCIENTIFIC = State('Scientific')
+        self.IMAGINARY = State('Imaginary')
 
         self.START.AddDelta(lambda c: isinstance(c, Token), self.READY)
         self.READY.AddDelta(lambda c: isinstance(c, Token), self.READY)
@@ -115,14 +116,15 @@ class NumberVariableDfa(Dfa):
         self.D1.AddDelta(self.isdigit, self.D2)
         self.D1.AddDelta(lambda c: c == '点', self.DOT)
         self.D1.AddDelta(self.ischaracter, self.VARIABLE)
+        self.D1.AddDelta(lambda c: c == 'i', self.IMAGINARY)
 
         self.NARY.AddDelta(lambda c, b: isinstance(c, Token), self.NAR)
         self.NARY.AddDelta(self.isvaliddigit, self.NARY)
         self.NARY.AddDelta(self.ischaracter, self.VARIABLE)
 
-
         self.SCIENTIFIC.AddDelta(lambda c: isinstance(c, Token), self.ARABIC)
         self.SCIENTIFIC.AddDelta(self.isdigit, self.SCIENTIFIC)
+        self.SCIENTIFIC.AddDelta(lambda c: c == 'i', self.IMAGINARY)
 
         self.D2.AddDelta(lambda c: isinstance(c, Token), self.ARABIC)
         self.D2.AddDelta(self.isdigit, self.D2)
@@ -130,10 +132,15 @@ class NumberVariableDfa(Dfa):
         self.D2.AddDelta(lambda c: c == '点', self.DOT)
         self.D2.AddDelta(lambda c: c == 'E', self.SCIENTIFIC)
         self.D2.AddDelta(self.ischaracter, self.VARIABLE)
+        self.D2.AddDelta(lambda c: c == 'i', self.IMAGINARY)
 
         self.DOT.AddDelta(lambda c: isinstance(c, Token), self.ARABIC)
         self.DOT.AddDelta(self.isdigit, self.DOT)
         self.DOT.AddDelta(self.ischaracter, self.VARIABLE)
+        self.DOT.AddDelta(lambda c: c == 'E', self.SCIENTIFIC)
+        self.DOT.AddDelta(lambda c: c == 'i', self.IMAGINARY)
+
+        self.IMAGINARY.AddDelta(lambda c: isinstance(c, Token), self.ARABIC)
 
 
     def isdigit(self, char):
@@ -217,3 +224,5 @@ if __name__ == '__main__':
     # r6 should fail
     r6 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','三','进','Z','A','B',WhitespaceToken(' ')])
     print(r6)
+    r7 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','点','二','E','八','i',WhitespaceToken(' ')])
+    print(r7)
