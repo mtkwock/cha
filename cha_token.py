@@ -13,8 +13,12 @@ class Token(object):
   def Translate(self):
     return self._value
 
+  def __eq__(self, other):
+    return self.__class__ == other.__class__ and self.GetValue() == other.GetValue()
+
   def __str__(self):
     return '%s(%s)' % (self.__class__, self.GetValue())
+
   def __repr__(self):
     return self.__str__()
 

@@ -86,6 +86,12 @@ class TestParseLine(unittest.TestCase):
     self.assertEqual('chāo1', self.parser.char_to_var['抄'])
     self.assertEqual('chāo2', self.parser.char_to_var['钞'])
 
+  def testOverlappingPinyin_IsConsistent(self):
+    self.case(
+        '朝们是【超，抄，钞，抄，超】',
+        'zhāomen = [chāo, chāo1, chāo2, chāo1, chāo]',
+    )
+
 class TestSymbolsReplaceTokens(unittest.TestCase):
   def setUp(self):
     parser = ChaParser()
