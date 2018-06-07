@@ -17,7 +17,7 @@ class Token(object):
     return self.__class__ == other.__class__ and self.GetValue() == other.GetValue()
 
   def __str__(self):
-    return '%s(%s)' % (self.__class__, self.GetValue())
+    return '%s(\'%s\')' % (self.__class__, self.GetValue())
 
   def __repr__(self):
     return self.__str__()
@@ -43,7 +43,8 @@ class MultilineStringToken(Token):
   abc'''
   """
   def Translate(self):
-    return self._value.replace('“““', '"""').replace('”””', '"""').replace('\\“', '"').replace('\\”', '"')
+    # print('Translating: %s' + self.GetValue())
+    return self.GetValue().replace('“““', '"""').replace('”””', '"""').replace('\\“', '"').replace('\\”', '"')
 
 class NumberFormat(Enum):
   ARABIC = 1
@@ -52,6 +53,23 @@ class NumberFormat(Enum):
   NARY = 4
   SCIENTIFIC = 5
 
+SCIENTIFIC_CHAR_TO_NUM = {
+  '负': '-',
+  '零': '0',
+  '一': '1',
+  '二': '2',
+  '两': '2',
+  '三': '3',
+  '四': '4',
+  '五': '5',
+  '六': '6',
+  '七': '7',
+  '八': '8',
+  '九': '9',
+  'E': 'e',
+  'i': 'j',
+  '点': '.',
+}
 
 class NumberToken(Token):
   """A number token, can be of various forms:
@@ -61,26 +79,33 @@ class NumberToken(Token):
     super().__init__(value)
     self.format = format
 
+  def GetFormat(self):
+    return self.format
+
   def Translate(self):
-      #TO_DO
-      if self.format == NumberFormat.ARABIC:
-          pass
-      elif self.format == NumberFormat.SHORTHAND:
-          pass
-      elif self.format == NumberFormat.FULLNAME:
-          pass
-      elif self.format == NumberFormat.NARY:
-          pass
-      elif self.format == NumberFormat.SCIENTIFIC: # potentially remove if included in arabic
-          pass
-      raise Exception('Format not supported: %s' % self.format)
+    #TO_DO
+    value = self.GetValue()
+    if self.format in [NumberFormat.ARABIC, NumberFormat.SCIENTIFIC]:
+      return ''.join(SCIENTIFIC_CHAR_TO_NUM[c] for c in value)
+    elif self.format == NumberFormat.SHORTHAND:
+      pass
+    elif self.format == NumberFormat.FULLNAME:
+      pass
+    elif self.format == NumberFormat.NARY:
+      pass
+    elif self.format == NumberFormat.SCIENTIFIC: # potentially remove if included in arabic
+      pass
+    raise Exception('Format not supported: %s' % self.format)
+
+  def __eq__(self, other):
+    return super().__eq__(other) and self.GetFormat() == other.GetFormat()
 
 class SymbolToken(Token):
   """A single symbol:
   e.g. +, -, &, &=, "
   """
   def Translate(self):
-      return reserved_symbols[self.GetValue()]
+    return reserved_symbols[self.GetValue()]
 
 class WhitespaceToken(Token):
   """Whitespace formatting comprised of only tabs or spaces."""
@@ -89,9 +114,9 @@ class WhitespaceToken(Token):
     return val.replace(' ', '  ').replace('\t', '  ')
 
 class EndToken(Token):
-    """End of Line Token. Holds no value."""
-    def __init__(self):
-        super().__init__('')
+  """End of Line Token. Holds no values."""
+  def __init__(self):
+    super().__init__('')
 
 class VariableToken(Token):
   """Variable names for classes, functions, and so on."""

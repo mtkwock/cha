@@ -73,11 +73,6 @@ reserved_symbols = {
 
 # Symbols that should be checked for first.
 symbol_order = sorted(reserved_symbols.keys(), key=lambda s: -len(s))
-# print(symbol_order)
-# first_pass_symbols = [key for key in reserved_symbols if key and key[-1] == '是'] + [
-#   '整除',
-#   '是不是'，
-# ]
 
 number_symbols = {
   '十六进': '0x', # Hex string representation
@@ -122,34 +117,3 @@ reserved_beginning_words = {
   '否则如果': 'elif ', # Although these individual parts will be replaced...
 }
 sorted_beginning_words = sorted(reserved_beginning_words.keys(), key=lambda s: -len(s))
-
-
-# Reserved words based on
-# https://www.programiz.com/python-programming/keywords-identifier#key
-# These cannot appear in any class, method, function, or variable name.
-# reserved_words = {
-#   '引进': 'import',
-#   '为': 'as',
-#   '如果': 'if',
-#   '否则': 'else',
-#   '过': 'pass',
-#   '跳出': 'break',
-#   '继续': 'continue', # ji4xu4
-#   '确认': 'assert',
-#   '提出': 'raise', # To Object: 拒绝
-#   '真': 'True',
-#   '假': 'False',
-#   '无': 'None',
-#   '是不是': 'is',
-#   '不是': 'is not',
-#   '和': 'and',
-#   '或': 'or',
-#   '不': 'not',
-#   # TODO: How does this handle for, for-in, for-in-if syntax?
-#   '每': 'for', # Need to restructure this from B infor A to for A in B
-#   '在': 'in',
-#   '拉姆达': 'lambda',
-#   '产生': 'yield',
-#   '退还': 'return',
-#   '删除': 'del',
-# }

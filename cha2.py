@@ -1,6 +1,7 @@
 #!bin/bash/env python
 
 from pinyin import get as pget
+from number_variable_dfa import NumberVariableDfa
 from string_dfa import StringDfa, MultilineStringDfa
 from cha_token import Token, WhitespaceToken, EndToken, SymbolToken, ReservedWordToken, VariableToken, ParseToken
 from cha_translation import reserved_symbols, symbol_order, reserved_beginning_words
@@ -11,22 +12,6 @@ class ChaParseException(Exception): pass
 class ChaNotImplementedException(Exception):
   def __init__(self, name):
     super().__init__(name + ' not implemented')
-
-# TODO: Implement and replace.
-class NumberVariableDfa():
-  def ReplaceTokens(self, tokens):
-    result = []
-    s = ''
-    for t in tokens:
-      if isinstance(t, Token):
-        if s:
-          result.append(VariableToken(s))
-          s = ''
-        result.append(t)
-      else:
-        s += t
-    print('NumberVariableDfa needs to be implemented!!!')
-    return result
 
 CHAR_TO_VAR_BASE = {
   '艹艹初始艹艹': '__chūshǐ__', # __init__
@@ -71,7 +56,7 @@ class ChaParser:
       else:
         break
     token = WhitespaceToken(whitespace)
-    f = filter(lambda t: t not in WHITESPACE_CHARS, tokens[len(whitespace):])
+    f = filter(lambda t: not isinstance(t, str) or t not in WHITESPACE_CHARS, tokens[len(whitespace):])
 
     return [token, *[t for t in f], EndToken()]
 
@@ -108,33 +93,9 @@ class ChaParser:
       tokens[1] = ReservedWordToken(word)
       for i in range(1, len(word)):
         tokens[i + 1] = False
-    # for word in reserved_words:
-    #   if not word: continue # Word not defined.
-    #   for i in range(1 + len(tokens) - len(word)):
-    #     found = True
-    #     for j in range(len(word)):
-    #       if tokens[i + j] != word[j]:
-    #         found = False
-    #         break
-    #     if not found: continue
-    #     tokens[i] = ReservedWordToken(word)
-    #     for j in range(1, len(word)):
-    #       tokens[i + j] = False
     return [t for t in filter(lambda t: bool(t), tokens)]
 
-  def ParseLine(self, line):
-    """Parses a single line of .cha to python.
-
-    As a side effect, modifies char_to_var and var_to_char with new
-    variable names if applicable.
-
-    Args:
-      line: string a line of cha.
-    Raises:
-      ChaParseException
-    Returns:
-      str: a string of .py code
-    """
+  def Tokenize(self, line):
     tokens = [c for c in line]
     tokens = self.multiline_string_dfa.ReplaceTokens(
         tokens,
@@ -153,7 +114,23 @@ class ChaParser:
     for t in tokens:
       if isinstance(t, str):
         raise ChaParseException('Character not parsed: %s' % t)
-    print(tokens)
+    return tokens
+
+  def ParseLine(self, line):
+    """Parses a single line of .cha to python.
+
+    As a side effect, modifies char_to_var and var_to_char with new
+    variable names if applicable.
+
+    Args:
+      line: string a line of cha.
+    Raises:
+      ChaParseException
+    Returns:
+      str: a string of .py code
+    """
+    tokens = self.Tokenize(line)
+
     # Handle class representation.
     if tokens[1].Translate() == 'class ':
       if tokens[3].Translate() == '(':
@@ -170,7 +147,7 @@ class ChaParser:
       return t.Translate()
     for t in tokens:
       if any(isinstance(t, token_class) for token_class in [WhitespaceToken, SymbolToken, ReservedWordToken, ParseToken, EndToken]):
-        translation += t.Translate()
+        translation += translate(t)
         avoid_next = True
       elif avoid_next:
         translation += translate(t)

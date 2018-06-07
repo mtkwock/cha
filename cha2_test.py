@@ -51,7 +51,7 @@ class TestParseLine(unittest.TestCase):
    距离：整数，步行距离。
    方向：方向集，去哪里。
   ”””
-  自己的去过地方的附加（【自己的右，自己的上，时间的时间（）】）
+  自己的去过地方的依附（【自己的右，自己的上，时间的时间（）】）
   自己的地图【（自己的x，自己的y）】是一
 ''', '''
   def zǒu(zìjǐ, jùlí, fāngxiàng):
@@ -61,20 +61,20 @@ class TestParseLine(unittest.TestCase):
    距离：整数，步行距离。
    方向：方向集，去哪里。
   """
-    zìjǐ.qùguòdìfāng.fùjiā([zìjǐ.yòu, zìjǐ.shàng, shíjiān.shíjiān()])
+    zìjǐ.qùguòdìfāng.yīfù([zìjǐ.yòu, zìjǐ.shàng, shíjiān.shíjiān()])
     zìjǐ.dìtú[(zìjǐ.x, zìjǐ.y)] = 1
 ''')
-  #
-  # def testDistinguishesNumberFromVariable(self):
-  #   """Numbers can be used as variable names if they aren't at the beginning."""
-  #   self.case('第一是一', 'dìyī = 1')
-  #
+
+  def testDistinguishesNumberFromVariable(self):
+    """Numbers can be used as variable names if they aren't at the beginning."""
+    self.case('第一是一', 'dìyī = 1')
+  
   def testSetsNewVariable(self):
     # ren2, a new class, should be created and stored
     case = '种类人：'
     self.assertFalse('人' in self.parser.char_to_var)
     self.ParseLine(case)
-    print(self.parser.char_to_var)
+    # print(self.parser.char_to_var)
     self.assertTrue('人' in self.parser.char_to_var)
     self.assertEqual('rén', self.parser.char_to_var['人'])
     self.assertEqual('人', self.parser.var_to_char['rén'])

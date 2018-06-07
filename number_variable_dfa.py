@@ -5,11 +5,7 @@
 from cha_token import Token, NumberFormat, NumberToken, VariableToken, ReservedWordToken, WhitespaceToken, SymbolToken
 
 from cha_translation import number_symbols
-#from string_dfa import Dfa
-
-class DfaException(Exception):
-    """Raised when bad strings are created."""
-    pass
+from dfa import Dfa, DfaException
 
 class State(object):
     """A single state used by NumberVariableDfa."""
@@ -163,7 +159,7 @@ class NumberVariableDfa(Dfa):
         Args:
             char: string of a single character.
         """
-        print(self.state.name)
+        # print(self.state.name)
         self.state = self.state.GetNextState(char)
 
 
@@ -208,21 +204,3 @@ class NumberVariableDfa(Dfa):
             else:
                 s += token
         return res
-
-if __name__ == '__main__':
-    my = NumberVariableDfa()
-    res = my.ReplaceTokens([ReservedWordToken('每'), '茶','茶', ReservedWordToken('当'),'水', ReservedWordToken('里')])
-    print(res)
-    r2 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'零','一','二','三','点','三',WhitespaceToken(' ')])
-    print(r2)
-    r3 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','七','三','E','三','九',WhitespaceToken(' ')])
-    print(r3)
-    r4 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','十','三','万','五','千',WhitespaceToken(' ')])
-    print(r4)
-    r5 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'二','进','一','零','一','零',WhitespaceToken(' ')])
-    print(r5)
-    # r6 should fail
-    r6 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','三','进','Z','A','B',WhitespaceToken(' ')])
-    print(r6)
-    r7 = my.ReplaceTokens([WhitespaceToken(' '), '我', SymbolToken('是'),'三','点','二','E','八','i',WhitespaceToken(' ')])
-    print(r7)
