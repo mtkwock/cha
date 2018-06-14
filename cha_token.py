@@ -85,15 +85,50 @@ class NumberToken(Token):
   def Translate(self):
     #TO_DO
     value = self.GetValue()
-    if self.format in [NumberFormat.ARABIC, NumberFormat.SCIENTIFIC]:
-      return ''.join(SCIENTIFIC_CHAR_TO_NUM[c] for c in value)
+    if self.format == NumberFormat.ARABIC:
+        return ''.join(SCIENTIFIC_CHAR_TO_NUM[c] for c in value)
     elif self.format == NumberFormat.SHORTHAND:
-      pass
+        pass
     elif self.format == NumberFormat.FULLNAME:
-      pass
+        ds = ['0','0','0','0']
+        a = '1'
+        added_wan = True
+        for c in value:
+            if c == '负':
+                ds.insert(0, SCIENTIFIC_CHAR_TO_NUM[c])
+            elif c not in '十百千万亿':
+                a = SCIENTIFIC_CHAR_TO_NUM[c]
+            elif c == '十':
+                ds[-2] = a
+                a = '0'
+            elif c == '百':
+                ds[-3] = a
+                a = '0'
+            elif c == '千':
+                ds[-4] = a
+                a = '0'
+            elif c == '万':
+                ds[-1] = a
+                for l in range(4): ds.append('0')
+                added_wan = True
+                a = '0'
+            elif c == '亿':
+                ds[-1] = a
+                for l in range(4): ds.append('0')
+                added_wan = False
+                a = '0'
+            #print(ds)
+        if value[-1] not in '十百千万亿':
+            ds[-1] = a
+            #print(ds)
+        if not added_wan:
+            for l in range(4): ds.insert(4, '0')
+            added_wan = True
+            #print(ds)
+        return ''.join(ds)
+
+
     elif self.format == NumberFormat.NARY:
-      pass
-    elif self.format == NumberFormat.SCIENTIFIC: # potentially remove if included in arabic
       pass
     raise Exception('Format not supported: %s' % self.format)
 
