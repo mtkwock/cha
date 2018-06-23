@@ -36,8 +36,8 @@ class TestParseLine(unittest.TestCase):
         '种类人（我种类，你种类）：',
         'class rén(ChaObject, wǒzhǒnglèi, nǐzhǒnglèi):')
 
-  # def testHandlesBasicSymbols(self):
-  #   self.case('一加一', '1 + 1')
+  def testHandlesBasicSymbols(self):
+    self.case('一加一', '1 + 1')
 
   def testUsesShiAsEqualSign(self):
     self.case('我是不是你', 'wǒ is nǐ')
@@ -68,7 +68,7 @@ class TestParseLine(unittest.TestCase):
   def testDistinguishesNumberFromVariable(self):
     """Numbers can be used as variable names if they aren't at the beginning."""
     self.case('第一是一', 'dìyī = 1')
-  
+
   def testSetsNewVariable(self):
     # ren2, a new class, should be created and stored
     case = '种类人：'

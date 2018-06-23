@@ -3,6 +3,7 @@
 import unittest
 from number_variable_dfa import NumberVariableDfa, DfaException
 from cha_token import Token, NumberFormat, NumberToken, VariableToken, ReservedWordToken, WhitespaceToken, SymbolToken, EndToken
+from cha_translation import reserved_beginning_words
 
 def tokenize(string):
   """Creates an array from an iterable."""
@@ -55,3 +56,12 @@ class NumberVariableDfaTest(unittest.TestCase):
 
   def testRejectsUnsuitableBinary(self):
     self.assertRaises(DfaException, self.dfa.ReplaceTokens, CreateTestCase('三三进ZAB'))
+
+  def testRejectsVariablesThatAreReservedBeginningWords(self):
+    for word in reserved_beginning_words:
+      self.assertRaises(DfaException, self.dfa.ReplaceTokens, CreateTestCase(word))
+
+  def testAllowsVariablesWithReservedBeginningWordsNotAtBeginning(self):
+    for word in reserved_beginning_words:
+      var = '啊' + word
+      self.RunTestCase(CreateTestCase(var), CreateExpectedValue(VariableToken(var)))
