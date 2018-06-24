@@ -188,3 +188,11 @@ reserved_beginning_words = {
   '否则如果': 'elif', # Although these individual parts will be replaced...
 }
 sorted_beginning_words = sorted(reserved_beginning_words.keys(), key=lambda s: -len(s))
+
+PyToCha = {
+  '#': '#',
+}
+
+PyToCha.update({reserved_beginning_words[key]: key for key in reserved_beginning_words})
+PyToCha.update({number_symbols[key]: key for key in number_symbols})
+PyToCha.update({reserved_symbols[key]: key for key in reserved_symbols})
