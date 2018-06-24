@@ -1,10 +1,10 @@
-#!bin/bash/env python
+#!/usr/bin/env python
 
 from pinyin import get as pget
 from number_variable_dfa import NumberVariableDfa
 from string_dfa import StringDfa, MultilineStringDfa
 from cha_token import Token, WhitespaceToken, EndToken, SymbolToken, ReservedWordToken, VariableToken, ParseToken
-from cha_translation import reserved_symbols, symbol_order, reserved_beginning_words
+from cha_translation import reserved_symbols, symbol_order, reserved_beginning_words, NeedsSpace
 import sys
 from pathlib import Path
 
@@ -15,9 +15,10 @@ class ChaNotImplementedException(Exception):
 
 CHAR_TO_VAR_BASE = {
   '艹艹初始艹艹': '__chūshǐ__', # __init__
-  '自己': 'zìjǐ', # Self
-  '都': 'dōu', # All
-  '任何': 'rènhé', # Any
+  '自己': 'zìjǐ', # self
+  '都': 'dōu', # all
+  '任何': 'rènhé', # any
+  '打印': 'dǎyìn', # print
 }
 
 VAR_TO_CHAR_BASE = {
@@ -116,7 +117,7 @@ class ChaParser:
         raise ChaParseException('Character not parsed: %s' % t)
     return tokens
 
-  def ParseLine(self, line):
+  def ParseLine(self, line, fname=''):
     """Parses a single line of .cha to python.
 
     As a side effect, modifies char_to_var and var_to_char with new
@@ -132,29 +133,56 @@ class ChaParser:
     tokens = self.Tokenize(line)
 
     # Handle class representation.
-    if tokens[1].Translate() == 'class ':
+    if tokens[1].Translate() == 'class':
       if tokens[3].Translate() == '(':
         tokens = [*tokens[:4], ParseToken('ChaObject, '), *tokens[4:]]
       else:
         tokens = [*tokens[:3], ParseToken('(ChaObject)'), *tokens[3:]]
 
+    seen_from = False
+    # for i in range(len(tokens)):
+      # translation = tokens[i].Translate()
+    # if translation.startswith('import '):
+    #   fname = translation[7:]
+    #   if Path(fname + '.cha').is_file():
+    #     pass
+    # if translation.startswith('from '):
+    #   fname = translation[5:translation.index(' import ')]
+    #   print(fname)
+    #   if Path(fname).is_file():
+    #     pass
+
     # Bring tokens together.
-    translation = ''
-    avoid_next = True
     def translate(t):
       if isinstance(t, VariableToken):
         return t.Translate(self.char_to_var, self.var_to_char)
       return t.Translate()
-    for t in tokens:
-      if any(isinstance(t, token_class) for token_class in [WhitespaceToken, SymbolToken, ReservedWordToken, ParseToken, EndToken]):
-        translation += translate(t)
-        avoid_next = True
-      elif avoid_next:
-        translation += translate(t)
-        avoid_next = False
-      else:
-        translation += ' ' + translate(t)
-        avoid_next = False
+    translation = tokens[0].Translate()
+    seen_from = False
+    for i in range(1, len(tokens) - 1):
+      if i == len(tokens) - 2:
+        left = tokens[i]
+        piece = translate(left)
+        translation += piece
+        continue
+      left, right = tokens[i], tokens[i + 1]
+      piece = translate(left)
+      if piece == 'from' or (not seen_from and piece == 'import'):
+        seen_from = piece == 'from'
+        # print(right)
+        if right.GetValue() != translate(right):
+          other_file = right.GetValue()
+          prefix = '/'.join(fname.split('/')[:-1])
+          if prefix: prefix += '/'
+          self.Convert(prefix + right.GetValue() + '.cha', prefix + right.Translate() + '.py')
+        # Translate the file defined by right
+      elif piece == 'import':
+        seen_from = False
+      translation += piece
+      if NeedsSpace(left, right):
+        translation += ' '
+    # TODO: Handle import translations if import is in the line.
+    # TODO: Perhaps also add newline separation for semicolons?
     return translation
 
   def Convert(self, source, dest, space_per_indent=2, use_tabs=False):
@@ -169,17 +197,14 @@ class ChaParser:
     Raises:
       Exception: An exception if something goes wrong with the conversion
     """
-    raise ChaNotImplementedException('ChaParser.Convert')
-    with open(filename) as f:
-      for line in f.readlines():
-        # Convert and export to './example.py'
-        # First figure out strings
-        # Then figure out special symbols such as +/-
-        # Determine which variables exist already
-        # Add new variable names to char_to_var
-        # Convert variable names to pinyin
-        # Append string to output file.
-        pass
+    with open(source, 'r') as f:
+      with open(dest, 'w') as write_file:
+        write_file.write('from cha_base import *\n')
+        for line in f.readlines():
+          l = self.ParseLine(line, source)
+          if not l.endswith('\n'):
+            l += '\n'
+          write_file.write(l)
 
 
 
@@ -200,7 +225,7 @@ if __name__ == '__main__':
     exit(0)
 
   source_file = args[1]
-  if not file.endswith('.cha'):
+  if not source_file.endswith('.cha'):
     raise Exception('Must end with .cha')
 
   dest_file = source_file[:-3] + 'py' if len(args) < 3 else args[2]

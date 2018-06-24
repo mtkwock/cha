@@ -125,6 +125,8 @@ class NumberToken(Token):
             for l in range(4): ds.insert(4, '0')
             added_wan = True
             #print(ds)
+        while ds[0] == '0':
+          ds = ds[1:]
         return ''.join(ds)
 
 
