@@ -44,7 +44,7 @@ class MultilineStringToken(Token):
   """
   def Translate(self):
     # print('Translating: %s' + self.GetValue())
-    return self.GetValue().replace('“““', '"""').replace('”””', '"""').replace('\\“', '"').replace('\\”', '"')
+    return self.GetValue().replace('“““', '"""').replace('”””', '"""').replace('\\“', '"').replace('\\”', '"').replace('\n', '')
 
 class NumberFormat(Enum):
   ARABIC = 1
@@ -125,6 +125,8 @@ class NumberToken(Token):
             for l in range(4): ds.insert(4, '0')
             added_wan = True
             #print(ds)
+        while ds[0] == '0':
+          ds = ds[1:]
         return ''.join(ds)
 
 
@@ -150,8 +152,13 @@ class WhitespaceToken(Token):
 
 class EndToken(Token):
   """End of Line Token. Holds no values."""
-  def __init__(self):
-    super().__init__('')
+  def __init__(self, comment=''):
+    super().__init__(comment)
+  def Translate(self):
+    val = self.GetValue()
+    if val:
+      return '#' + val[1:]
+    return ''
 
 class VariableToken(Token):
   """Variable names for classes, functions, and so on."""
